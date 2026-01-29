@@ -1,96 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Dessert Bakery Design System
+   Warm, handcrafted, cozy aesthetic
+   All colors in HSL format
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm cream background palette */
+    --background: 35 40% 96%;
+    --foreground: 25 30% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card surfaces - slightly warmer than background */
+    --card: 35 35% 98%;
+    --card-foreground: 25 30% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Popover matches card */
+    --popover: 35 35% 98%;
+    --popover-foreground: 25 30% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary: Warm caramel brown */
+    --primary: 28 65% 45%;
+    --primary-foreground: 35 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary: Soft chocolate */
+    --secondary: 25 25% 88%;
+    --secondary-foreground: 25 30% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted: Warm beige tones */
+    --muted: 35 20% 92%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent: Matcha green */
+    --accent: 85 35% 55%;
+    --accent-foreground: 85 40% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive: Warm red */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* UI elements */
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 28 65% 45%;
 
-    --radius: 0.5rem;
+    /* Generous radius for soft, rounded feel */
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Sidebar - warm tones */
+    --sidebar-background: 35 30% 94%;
+    --sidebar-foreground: 25 30% 20%;
+    --sidebar-primary: 28 65% 45%;
+    --sidebar-primary-foreground: 35 40% 98%;
+    --sidebar-accent: 35 25% 90%;
+    --sidebar-accent-foreground: 25 30% 20%;
+    --sidebar-border: 30 20% 85%;
+    --sidebar-ring: 28 65% 45%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Custom bakery colors */
+    --caramel: 28 65% 45%;
+    --caramel-light: 30 55% 70%;
+    --chocolate: 20 45% 25%;
+    --chocolate-light: 20 35% 40%;
+    --matcha: 85 35% 55%;
+    --matcha-light: 90 30% 75%;
+    --cream: 35 40% 96%;
+    --warm-white: 35 35% 98%;
+    --toast: 35 50% 85%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Gradients */
+    --gradient-warm: linear-gradient(135deg, hsl(35 40% 96%) 0%, hsl(30 35% 92%) 100%);
+    --gradient-caramel: linear-gradient(135deg, hsl(28 65% 45%) 0%, hsl(20 55% 35%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(35 40% 96% / 0) 0%, hsl(35 40% 96%) 100%);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Shadows - warm tinted */
+    --shadow-soft: 0 4px 20px -4px hsl(25 30% 20% / 0.08);
+    --shadow-card: 0 8px 30px -8px hsl(25 30% 20% / 0.1);
+    --shadow-elevated: 0 12px 40px -12px hsl(25 30% 20% / 0.15);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark mode with warm undertones */
+    --background: 25 20% 12%;
+    --foreground: 35 30% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 25 20% 15%;
+    --card-foreground: 35 30% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 25 20% 15%;
+    --popover-foreground: 35 30% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 30 60% 55%;
+    --primary-foreground: 25 20% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 25 15% 22%;
+    --secondary-foreground: 35 30% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 25 15% 20%;
+    --muted-foreground: 30 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 85 30% 45%;
+    --accent-foreground: 85 40% 95%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 25 15% 25%;
+    --input: 25 15% 25%;
+    --ring: 30 60% 55%;
+
+    --sidebar-background: 25 20% 10%;
+    --sidebar-foreground: 35 30% 90%;
+    --sidebar-primary: 30 60% 55%;
+    --sidebar-primary-foreground: 25 20% 10%;
+    --sidebar-accent: 25 15% 18%;
+    --sidebar-accent-foreground: 35 30% 90%;
+    --sidebar-border: 25 15% 25%;
+    --sidebar-ring: 30 60% 55%;
   }
 }
 
@@ -99,7 +129,158 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    scroll-behavior: smooth;
   }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+    font-family: 'Nunito', sans-serif;
+  }
+}
+
+@layer components {
+  /* Bakery-style pill buttons */
+  .btn-bakery {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all duration-300;
+    @apply bg-primary text-primary-foreground;
+    @apply hover:scale-105 hover:shadow-lg;
+    @apply active:scale-95;
+  }
+
+  .btn-bakery-outline {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all duration-300;
+    @apply border-2 border-primary text-primary bg-transparent;
+    @apply hover:bg-primary hover:text-primary-foreground;
+  }
+
+  .btn-bakery-soft {
+    @apply inline-flex items-center justify-center rounded-full px-6 py-3 font-semibold transition-all duration-300;
+    @apply bg-secondary text-secondary-foreground;
+    @apply hover:bg-primary hover:text-primary-foreground;
+  }
+
+  /* Warm card styles */
+  .card-bakery {
+    @apply rounded-2xl bg-card p-6 transition-all duration-300;
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-bakery:hover {
+    box-shadow: var(--shadow-elevated);
+    @apply -translate-y-1;
+  }
+
+  /* Product card specific */
+  .card-product {
+    @apply rounded-3xl bg-card overflow-hidden transition-all duration-300;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .card-product:hover {
+    box-shadow: var(--shadow-elevated);
+    @apply -translate-y-2;
+  }
+
+  /* Hero section styling */
+  .hero-section {
+    @apply relative overflow-hidden;
+    background: var(--gradient-warm);
+  }
+
+  /* Section container */
+  .section-bakery {
+    @apply py-16 md:py-24;
+  }
+
+  /* Food image styling */
+  .food-image {
+    @apply rounded-2xl object-cover;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Input styling */
+  .input-bakery {
+    @apply rounded-xl border-2 border-border bg-card px-4 py-3 transition-all duration-200;
+    @apply focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  /* Badge styles */
+  .badge-bakery {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-medium;
+    @apply bg-secondary text-secondary-foreground;
+  }
+
+  .badge-caramel {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-medium;
+    @apply bg-primary/10 text-primary;
+  }
+
+  .badge-matcha {
+    @apply inline-flex items-center rounded-full px-3 py-1 text-sm font-medium;
+    @apply bg-accent/20 text-accent-foreground;
+  }
+}
+
+@layer utilities {
+  /* Warm text gradient */
+  .text-gradient-warm {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(28 65% 45%) 0%, hsl(20 45% 35%) 100%);
+  }
+
+  /* Handwritten style accent */
+  .text-handwritten {
+    font-family: 'Nunito', cursive;
+    @apply italic;
+  }
+
+  /* Soft focus ring */
+  .focus-bakery {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Animated underline */
+  .underline-bakery {
+    @apply relative;
+  }
+
+  .underline-bakery::after {
+    @apply absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300 content-[''];
+  }
+
+  .underline-bakery:hover::after {
+    @apply w-full;
+  }
+
+  /* Warm overlay */
+  .overlay-warm {
+    @apply absolute inset-0;
+    background: linear-gradient(180deg, transparent 0%, hsl(35 40% 96% / 0.8) 100%);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(35 20% 92%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(25 25% 75%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(28 65% 45%);
 }
