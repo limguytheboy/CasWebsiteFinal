@@ -26,10 +26,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* Image */}
         <div className="relative aspect-square overflow-hidden">
           <img
-            src={product.image}
+            src={product.image || '/placeholder.jpg'}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
+
           {product.featured && (
             <span className="absolute left-3 top-3 badge-caramel">
               Featured
