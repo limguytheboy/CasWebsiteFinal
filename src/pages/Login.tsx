@@ -14,6 +14,16 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const shouldIgnoreAuthWarning = (message: string) => {
+    const msg = message.toLowerCase()
+    return (
+      msg.includes('leaked') ||
+      msg.includes('hibp') ||
+      msg.includes('pwned') ||
+      msg.includes('compromised password')
+    )
+  }
+
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setLoading(true)
@@ -23,8 +33,16 @@ const Login: React.FC = () => {
       toast.success('Logged in successfully!')
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
-      if (err instanceof Error) toast.error(err.message)
-      else toast.error('Login failed')
+      if (err instanceof Error) {
+        // ✅ Hide Supabase leaked password warning (HIBP)
+        if (shouldIgnoreAuthWarning(err.message)) {
+          // do nothing (silent)
+          return
+        }
+        toast.error(err.message)
+      } else {
+        toast.error('Login failed')
+      }
     } finally {
       setLoading(false)
     }
