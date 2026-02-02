@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getProducts } from '@/data/products';
 import { useCart } from '@/contexts/CartContext';
 import { toast } from 'sonner';
 import ProductCard from '@/components/products/ProductCard';
 import { Product } from '@/data/types';
+import { getProductById } from '@/data/products';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
@@ -19,16 +19,14 @@ const ProductDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      const data = await getProducts();
-      setProducts(data);
-
-      const found = data.find(p => p.id === id) ?? null;
-      setProduct(found);
+    const loadProduct = async () => {
+      if (!id) return;
+      const data = await getProductById(id);
+      setProduct(data);
       setLoading(false);
     };
 
-    loadProducts();
+    loadProduct();
   }, [id]);
 
   // ✅ PREVENT WHITE SCREEN

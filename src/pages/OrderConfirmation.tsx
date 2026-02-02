@@ -1,23 +1,43 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { CheckCircle, Package, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useOrders } from '@/contexts/OrderContext';
+import React, { useEffect, useMemo } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { CheckCircle, Package, ArrowRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useOrders } from '@/contexts/OrderContext'
 
 const OrderConfirmation: React.FC = () => {
-  const { orderId } = useParams();
-  const { getOrder } = useOrders();
-  const order = orderId ? getOrder(orderId) : null;
+  const { orderId } = useParams()
+  const { orders, loading, fetchOrders } = useOrders()
 
+  // Ensure orders are loaded (important when user refreshes page)
+  useEffect(() => {
+    if (!orders.length) fetchOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId])
+
+  const order = useMemo(() => {
+    if (!orderId) return null
+    return orders.find(o => o.id === orderId) ?? null
+  }, [orders, orderId])
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="container py-20 text-center">
+        <h1 className="text-2xl font-bold">Loading order...</h1>
+      </div>
+    )
+  }
+
+  // Not found state
   if (!order) {
     return (
       <div className="container py-20 text-center">
         <h1 className="text-2xl font-bold">Order not found</h1>
-        <Link to="/">
-          <Button className="mt-4 rounded-full">Go Home</Button>
+        <Link to="/dashboard">
+          <Button className="mt-4 rounded-full">Go to Dashboard</Button>
         </Link>
       </div>
-    );
+    )
   }
 
   return (
@@ -44,9 +64,10 @@ const OrderConfirmation: React.FC = () => {
         {/* Order Details */}
         <div className="mt-6 rounded-2xl bg-card p-6 shadow-card text-left">
           <h2 className="font-bold text-foreground">Order Details</h2>
+
           <div className="mt-4 space-y-3">
-            {order.items.map(item => (
-              <div key={item.product.id} className="flex justify-between">
+            {(order.items ?? []).map((item, idx) => (
+              <div key={item.product.id ?? idx} className="flex justify-between">
                 <span className="text-muted-foreground">
                   {item.quantity}x {item.product.name}
                 </span>
@@ -55,7 +76,10 @@ const OrderConfirmation: React.FC = () => {
                 </span>
               </div>
             ))}
+
+
             <hr className="border-border" />
+
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
               <span className="text-primary">${order.total.toFixed(2)}</span>
@@ -70,7 +94,7 @@ const OrderConfirmation: React.FC = () => {
             <div className="text-left">
               <p className="font-bold text-foreground">Pickup Information</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your order will be ready for pickup during lunch break at the school cafeteria. 
+                Your order will be ready for pickup during lunch break at the school cafeteria.
                 Please show your order number when collecting.
               </p>
             </div>
@@ -84,6 +108,7 @@ const OrderConfirmation: React.FC = () => {
               View Order Details
             </Button>
           </Link>
+
           <Link to="/products">
             <Button className="w-full rounded-full sm:w-auto">
               Continue Shopping
@@ -93,7 +118,7 @@ const OrderConfirmation: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default OrderConfirmation;
+export default OrderConfirmation

@@ -1,96 +1,218 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User } from '@/data/types';
+// src/contexts/AuthContext.tsx
+/* eslint-disable react-refresh/only-export-components */
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import { supabase } from '@/lib/supabase'
+import type { Session, User } from '@supabase/supabase-js'
 
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, name: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
-  updateUser: (data: Partial<User>) => void;
+type Role = 'user' | 'staff' | 'admin'
+
+export type Profile = {
+  id: string
+  role: 'user' | 'staff' | 'admin'
+  full_name: string | null
+  phone: string | null
+  address?: string | null
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+type AuthContextType = {
+  user: User | null
+  profile: Profile | null
+  loading: boolean
+  login: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
+}
 
-// Mock users for demo
-const mockUsers: (User & { password: string })[] = [
-  { id: '1', email: 'admin@sweetbites.com', password: 'admin123', name: 'Admin', role: 'admin' },
-  { id: '2', email: 'staff@sweetbites.com', password: 'staff123', name: 'Baker Sarah', role: 'staff' },
-  { id: '3', email: 'demo@example.com', password: 'demo123', name: 'Demo User', role: 'customer' },
-];
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('bakery-user');
-    return saved ? JSON.parse(saved) : null;
-  });
+const PROFILE_TIMEOUT_MS = 6000
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const found = mockUsers.find(u => u.email === email && u.password === password);
-    if (found) {
-      const { password: _, ...userData } = found;
-      setUser(userData);
-      localStorage.setItem('bakery-user', JSON.stringify(userData));
-      return true;
-    }
-    return false;
-  };
+function promiseWithTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
 
-  const signup = async (email: string, password: string, name: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const exists = mockUsers.find(u => u.email === email);
-    if (exists) return false;
+    promise
+      .then(res => {
+        clearTimeout(timer)
+        resolve(res)
+      })
+      .catch(err => {
+        clearTimeout(timer)
+        reject(err)
+      })
+  })
+}
 
-    const newUser: User = {
-      id: String(Date.now()),
-      email,
-      name,
-      role: 'customer',
-    };
-    mockUsers.push({ ...newUser, password });
-    setUser(newUser);
-    localStorage.setItem('bakery-user', JSON.stringify(newUser));
-    return true;
-  };
+/**
+ * IMPORTANT:
+ * supabase query builder isn't a Promise in TS type system,
+ * so we wrap it with Promise.resolve(...) to force a real Promise<T>.
+ */
+async function fetchProfileWithTimeout(uid: string): Promise<Profile | null> {
+  const request = Promise.resolve(
+    supabase
+      .from('profiles')
+      .select('id, role, full_name, phone, created_at')
+      .eq('id', uid)
+      .maybeSingle()
+  )
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('bakery-user');
-  };
+  const { data, error } = await promiseWithTimeout(request, PROFILE_TIMEOUT_MS, 'fetchProfile')
 
-  const updateUser = (data: Partial<User>) => {
-    if (user) {
-      const updated = { ...user, ...data };
-      setUser(updated);
-      localStorage.setItem('bakery-user', JSON.stringify(updated));
-    }
-  };
+  if (error) throw error
+  return (data as Profile | null) ?? null
+}
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        signup,
-        logout,
-        isAuthenticated: !!user,
-        updateUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const mountedRef = useRef(true)
+  const initRanRef = useRef(false)
+
+  const safeSetUser = (u: User | null) => {
+    if (!mountedRef.current) return
+    setUser(u)
   }
-  return context;
-};
+
+  const safeSetProfile = (p: Profile | null) => {
+    if (!mountedRef.current) return
+    setProfile(p)
+  }
+
+  const safeSetLoading = (v: boolean) => {
+    if (!mountedRef.current) return
+    setLoading(v)
+  }
+
+  const applySession = useCallback(async (session: Session | null) => {
+    const nextUser = session?.user ?? null
+
+    if (!nextUser) {
+      safeSetUser(null)
+      safeSetProfile(null)
+      safeSetLoading(false)
+      return
+    }
+
+    safeSetUser(nextUser)
+
+    try {
+      const prof = await fetchProfileWithTimeout(nextUser.id)
+      safeSetProfile(prof)
+    } catch (err) {
+      console.error('[AuthContext] fetchProfile failed:', err)
+      safeSetProfile(null)
+    } finally {
+      safeSetLoading(false)
+    }
+  }, [])
+
+  const initAuth = useCallback(async () => {
+    if (initRanRef.current) return
+    initRanRef.current = true
+
+    safeSetLoading(true)
+
+    try {
+      const { data, error } = await supabase.auth.getSession()
+      if (error) throw error
+      await applySession(data.session ?? null)
+    } catch (err) {
+      console.error('[AuthContext] initAuth error:', err)
+      safeSetUser(null)
+      safeSetProfile(null)
+      safeSetLoading(false)
+    }
+  }, [applySession])
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    void initAuth()
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session)
+    })
+
+    return () => {
+      mountedRef.current = false
+      listener.subscription.unsubscribe()
+    }
+  }, [initAuth, applySession])
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      safeSetLoading(true)
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        safeSetLoading(false)
+        throw error
+      }
+
+      await applySession(data.session ?? null)
+    },
+    [applySession]
+  )
+
+  const signOut = useCallback(async () => {
+    safeSetLoading(true)
+
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) console.error('[AuthContext] signOut error:', error)
+    } finally {
+      safeSetUser(null)
+      safeSetProfile(null)
+      safeSetLoading(false)
+    }
+  }, [])
+
+  const refreshProfile = useCallback(async () => {
+    if (!user) return
+
+    safeSetLoading(true)
+    try {
+      const prof = await fetchProfileWithTimeout(user.id)
+      safeSetProfile(prof)
+    } catch (err) {
+      console.error('[AuthContext] refreshProfile error:', err)
+    } finally {
+      safeSetLoading(false)
+    }
+  }, [user])
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      profile,
+      loading,
+      login,
+      signOut,
+      refreshProfile,
+    }),
+    [user, profile, loading, login, signOut, refreshProfile]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export function useAuth(): AuthContextType {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
+  return ctx
+}

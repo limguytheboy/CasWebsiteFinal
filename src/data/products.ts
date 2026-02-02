@@ -1,21 +1,26 @@
 import { supabase } from '@/lib/supabase';
 import { Product } from './types';
+console.log('products.ts LOADED');
 
 /**
  * Fetch all products from Supabase
  */
 export async function getProducts(): Promise<Product[]> {
+  console.log('getProducts CALLED');
+
   const { data, error } = await supabase
     .from('products')
     .select('*')
     .order('created_at', { ascending: false });
+
+  console.log('PRODUCTS RESULT:', { data, error });
 
   if (error) {
     console.error('Error fetching products:', error);
     return [];
   }
 
-  return data as Product[];
+  return data ?? [];
 }
 
 /**

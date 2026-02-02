@@ -44,14 +44,20 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/supabase-js": "^2.93.2",
     "@tanstack/react-query": "^5.83.0",
+    "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cors": "^2.8.6",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
+    "express": "^5.2.1",
     "input-otp": "^1.4.2",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "pg": "^8.17.2",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -87,5 +93,18 @@
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vitest": "^3.2.4"
-  }
+  },
+  "description": "**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/limguytheboy/CasWEbsite.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/limguytheboy/CasWEbsite/issues"
+  },
+  "homepage": "https://github.com/limguytheboy/CasWEbsite#readme"
 }

@@ -1,9 +1,19 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
-import Footer from './Footer';
+import { Outlet } from 'react-router-dom'
+import Navbar from './Navbar'
+import Footer from './Footer'
+import { useAuth } from '@/contexts/AuthContext'
 
-const Layout: React.FC = () => {
+export default function Layout() {
+  const { loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center text-lg">
+        Loading...
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -12,7 +22,5 @@ const Layout: React.FC = () => {
       </main>
       <Footer />
     </div>
-  );
-};
-
-export default Layout;
+  )
+}

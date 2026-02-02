@@ -1,90 +1,198 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Order, CartItem } from '@/data/types';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+import type { CartItem, Order } from '@/data/types'
+import { toast } from 'sonner'
 
-interface OrderContextType {
-  orders: Order[];
-  createOrder: (items: CartItem[], total: number, paymentMethod: 'card' | 'cash', notes?: string) => Order;
-  getOrdersByUser: (userId: string) => Order[];
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  getOrder: (orderId: string) => Order | undefined;
+type PaymentMethod = 'bca' | 'cash'
+type DeliveryMethod = 'pickup' | 'delivery'
+
+type OrdersRow = {
+  id: string
+  user_id: string
+  order_number: string | null
+  status: Order['status']
+  total: number | null
+  notes: string | null
+  payment_method: PaymentMethod | null
+  delivery_method: DeliveryMethod | null
+  created_at: string | null
 }
 
-const OrderContext = createContext<OrderContextType | undefined>(undefined);
+interface OrdersContextType {
+  orders: Order[]
+  loading: boolean
+  fetchOrders: () => Promise<void>
 
-export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('bakery-orders');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed.map((order: Order) => ({
-        ...order,
-        createdAt: new Date(order.createdAt),
-        pickupDate: order.pickupDate ? new Date(order.pickupDate) : undefined,
-      }));
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('bakery-orders', JSON.stringify(orders));
-  }, [orders]);
-
-  const createOrder = (
+  createOrder: (
     items: CartItem[],
     total: number,
-    paymentMethod: 'card' | 'cash',
-    notes?: string
-  ): Order => {
-    const userId = JSON.parse(localStorage.getItem('bakery-user') || '{}').id || 'guest';
-    const newOrder: Order = {
-      id: `ORD-${Date.now()}`,
-      userId,
-      items,
-      total,
-      status: 'pending',
-      createdAt: new Date(),
-      notes,
+    paymentMethod: PaymentMethod,
+    notes?: string,
+    deliveryMethod?: DeliveryMethod,
+    address?: string | null,
+    paymentProofUrl?: string | null,
+    senderBankName?: string | null,
+    senderAccountName?: string | null
+  ) => Promise<Order>
+}
+
+const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
+
+export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { user } = useAuth()
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const mapOrderRowToOrder = (row: OrdersRow): Order => {
+    const paymentMethod = (row.payment_method ?? 'cash') as Order['paymentMethod']
+
+    return {
+      id: row.id,
+      userId: row.user_id,
+      orderNumber: row.order_number ?? row.id,
+      status: row.status,
+      total: Number(row.total ?? 0),
+      notes: row.notes ?? '',
       paymentMethod,
-    };
-    setOrders(prev => [newOrder, ...prev]);
-    return newOrder;
-  };
+      deliveryMethod: (row.delivery_method ?? 'pickup') as Order['deliveryMethod'],
+      createdAt: row.created_at ? new Date(row.created_at) : new Date(),
 
-  const getOrdersByUser = (userId: string) => {
-    return orders.filter(order => order.userId === userId);
-  };
+      // ✅ REQUIRED by your Order type
+      items: [],
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(prev =>
-      prev.map(order =>
-        order.id === orderId ? { ...order, status } : order
+      // ✅ REQUIRED by your Order type
+      // rule: card/bca = paid, cash = unpaid
+      paid: paymentMethod === 'bca',
+    }
+  }
+
+  const fetchOrders = async () => {
+    if (!user) {
+      setOrders([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        `
+        id,
+        user_id,
+        order_number,
+        status,
+        total,
+        notes,
+        payment_method,
+        delivery_method,
+        created_at
+      `
       )
-    );
-  };
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .returns<OrdersRow[]>()
 
-  const getOrder = (orderId: string) => {
-    return orders.find(order => order.id === orderId);
-  };
+    if (error) {
+      console.error(error)
+      toast.error('Failed to fetch orders')
+      setLoading(false)
+      return
+    }
+
+    setOrders((data ?? []).map(mapOrderRowToOrder))
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  const createOrder: OrdersContextType['createOrder'] = async (
+    items,
+    total,
+    paymentMethod,
+    notes = '',
+    deliveryMethod = 'pickup',
+    address = null,
+    paymentProofUrl = null,
+    senderBankName = null,
+    senderAccountName = null
+  ) => {
+    if (!user) throw new Error('Not authenticated')
+
+    const { data: orderRow, error: orderError } = await supabase
+      .from('orders')
+      .insert([
+        {
+          user_id: user.id,
+          total,
+          status: 'pending',
+          payment_method: paymentMethod,
+          delivery_method: deliveryMethod,
+          notes,
+
+          // only works if columns exist in DB
+          address,
+          payment_proof_url: paymentProofUrl,
+          sender_bank_name: senderBankName,
+          sender_account_name: senderAccountName,
+        },
+      ])
+      .select(
+        `
+        id,
+        user_id,
+        order_number,
+        status,
+        total,
+        notes,
+        payment_method,
+        delivery_method,
+        created_at
+      `
+      )
+      .single<OrdersRow>()
+
+    if (orderError) throw orderError
+    if (!orderRow) throw new Error('Order insert failed')
+
+    const order = mapOrderRowToOrder(orderRow)
+
+    // create order items (based on your table columns)
+    const orderItemsPayload = items.map(ci => ({
+      order_id: order.id,
+      product_id: ci.product.id,
+      quantity: ci.quantity,
+      prepared_quantity: 0,
+      missing_stock: false,
+    }))
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(orderItemsPayload)
+
+    if (itemsError) throw itemsError
+
+    await fetchOrders()
+    return order
+  }
 
   return (
-    <OrderContext.Provider
-      value={{
-        orders,
-        createOrder,
-        getOrdersByUser,
-        updateOrderStatus,
-        getOrder,
-      }}
-    >
+    <OrdersContext.Provider value={{ orders, loading, fetchOrders, createOrder }}>
       {children}
-    </OrderContext.Provider>
-  );
-};
+    </OrdersContext.Provider>
+  )
+}
 
 export const useOrders = () => {
-  const context = useContext(OrderContext);
-  if (!context) {
-    throw new Error('useOrders must be used within an OrderProvider');
-  }
-  return context;
-};
+  const ctx = useContext(OrdersContext)
+  if (!ctx) throw new Error('useOrders must be used inside OrdersProvider')
+  return ctx
+}

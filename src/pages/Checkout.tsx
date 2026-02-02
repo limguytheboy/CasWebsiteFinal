@@ -1,30 +1,44 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { CreditCard, Wallet, ArrowLeft, Lock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useOrders } from '@/contexts/OrderContext';
-import { toast } from 'sonner';
+import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Wallet, ArrowLeft, Lock, Truck, Store, Landmark } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { useCart } from '@/contexts/CartContext'
+import { useOrders } from '@/contexts/OrderContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+const DELIVERY_FEE = 1
 
 const Checkout: React.FC = () => {
-  const navigate = useNavigate();
-  const { items, totalPrice, clearCart } = useCart();
-  const { isAuthenticated, user } = useAuth();
-  const { createOrder } = useOrders();
+  const navigate = useNavigate()
+  const { items, totalPrice, clearCart } = useCart()
+  const { createOrder } = useOrders()
+  const { user, profile } = useAuth()
 
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
-  const [notes, setNotes] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'bca' | 'cash'>('bca')
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup')
 
-  // Mock card details
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvv, setCvv] = useState('');
+  const [senderBankName, setSenderBankName] = useState('')
+  const [senderAccountName, setSenderAccountName] = useState('')
+
+  const [address, setAddress] = useState(profile?.address ?? '')
+  const [notes, setNotes] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  const [proofFile, setProofFile] = useState<File | null>(null)
+
+  useEffect(() => {
+    if (profile?.address) setAddress(profile.address)
+  }, [profile?.address])
+
+  const finalTotal = useMemo(() => {
+    return deliveryMethod === 'delivery' ? totalPrice + DELIVERY_FEE : totalPrice
+  }, [totalPrice, deliveryMethod])
 
   if (items.length === 0) {
     return (
@@ -34,180 +48,246 @@ const Checkout: React.FC = () => {
           <Button className="mt-4 rounded-full">Browse Treats</Button>
         </Link>
       </div>
-    );
+    )
+  }
+
+  const uploadPaymentProof = async (file: File) => {
+    if (!user) throw new Error('Not logged in')
+
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${user.id}/${Date.now()}.${ext}`
+
+    const { error } = await supabase.storage.from('payment-proofs').upload(path, file, {
+      upsert: true,
+      cacheControl: '3600',
+    })
+
+    if (error) throw error
+
+    const { data } = supabase.storage.from('payment-proofs').getPublicUrl(path)
+    return data.publicUrl
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isAuthenticated) {
-      toast.error('Please sign in to place an order');
-      navigate('/login?redirect=/checkout');
-      return;
+    e.preventDefault()
+
+    if (!user) {
+      toast.error('Please sign in to place an order')
+      navigate('/login?redirect=/checkout')
+      return
     }
 
-    setIsProcessing(true);
-    
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const order = createOrder(items, totalPrice, paymentMethod, notes);
-    clearCart();
-    
-    toast.success('Order placed successfully!');
-    navigate(`/order-confirmation/${order.id}`);
-  };
+    if (!profile?.full_name || !profile?.phone) {
+      toast.error('Please complete your profile before ordering')
+      navigate('/dashboard/profile')
+      return
+    }
+
+    if (deliveryMethod === 'delivery' && !address.trim()) {
+      toast.error('Delivery address is required')
+      return
+    }
+
+    if (paymentMethod === 'bca') {
+      if (!senderBankName.trim() || !senderAccountName.trim()) {
+        toast.error('Please enter sender bank name and sender account name.')
+        return
+      }
+      if (!proofFile) {
+        toast.error('Please upload payment proof for BCA transfer')
+        return
+      }
+    }
+
+    try {
+      setIsProcessing(true)
+
+      if (deliveryMethod === 'delivery' && address !== (profile.address ?? '')) {
+        await supabase.from('profiles').update({ address }).eq('id', user.id)
+      }
+
+      let proofUrl: string | null = null
+      if (paymentMethod === 'bca' && proofFile) {
+        proofUrl = await uploadPaymentProof(proofFile)
+      }
+
+      const order = await createOrder(
+        items,
+        finalTotal,
+        paymentMethod,
+        notes,
+        deliveryMethod,
+        deliveryMethod === 'delivery' ? address : null,
+        proofUrl,
+        paymentMethod === 'bca' ? senderBankName.trim() : null,
+        paymentMethod === 'bca' ? senderAccountName.trim() : null
+      )
+
+      await clearCart()
+      toast.success('Order placed! Waiting for payment verification.')
+      navigate(`/order-confirmation/${order.id}`)
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to place order. Please try again.')
+      setIsProcessing(false)
+    }
+  }
 
   return (
     <div className="container py-8 animate-fade-in">
       <button
         onClick={() => navigate(-1)}
-        className="mb-6 flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        className="mb-6 flex items-center gap-2 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Cart
       </button>
 
-      <h1 className="text-3xl font-bold text-foreground">Checkout</h1>
+      <h1 className="text-3xl font-bold">Checkout</h1>
 
       <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-3">
-        {/* Checkout Form */}
+        {/* LEFT */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Contact Info */}
-          {!isAuthenticated && (
-            <div className="rounded-2xl bg-muted p-6">
-              <p className="text-muted-foreground">
-                <Link to="/login?redirect=/checkout" className="font-medium text-primary underline">
-                  Sign in
-                </Link>{' '}
-                to place your order and track your purchases.
-              </p>
-            </div>
-          )}
-
-          {/* Payment Method */}
           <div className="card-bakery">
-            <h2 className="text-xl font-bold text-foreground">Payment Method</h2>
+            <h2 className="text-xl font-bold">Delivery Method</h2>
+
             <RadioGroup
-              value={paymentMethod}
-              onValueChange={(value) => setPaymentMethod(value as 'card' | 'cash')}
+              value={deliveryMethod}
+              onValueChange={v => setDeliveryMethod(v as 'pickup' | 'delivery')}
               className="mt-4 space-y-3"
             >
-              <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-border p-4 transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
-                <RadioGroupItem value="card" id="card" />
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-foreground">Card Payment</p>
-                  <p className="text-sm text-muted-foreground">Pay securely with your card</p>
-                </div>
+              <label className="flex items-center gap-4 rounded-xl border p-4">
+                <RadioGroupItem value="pickup" />
+                <Store className="h-5 w-5" />
+                Pickup
               </label>
-              <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-border p-4 transition-colors has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary/5">
-                <RadioGroupItem value="cash" id="cash" />
-                <Wallet className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-foreground">Cash on Pickup</p>
-                  <p className="text-sm text-muted-foreground">Pay when you collect your order</p>
-                </div>
+
+              <label className="flex items-center gap-4 rounded-xl border p-4">
+                <RadioGroupItem value="delivery" />
+                <Truck className="h-5 w-5" />
+                Delivery (+${DELIVERY_FEE})
               </label>
             </RadioGroup>
           </div>
 
-          {/* Card Details */}
-          {paymentMethod === 'card' && (
+          {deliveryMethod === 'delivery' && (
             <div className="card-bakery">
-              <h2 className="text-xl font-bold text-foreground">Card Details</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                This is a demo. No real payment will be processed.
-              </p>
-              <div className="mt-4 space-y-4">
-                <div>
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    className="input-bakery mt-1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="expiry">Expiry Date</Label>
-                    <Input
-                      id="expiry"
-                      placeholder="MM/YY"
-                      value={expiry}
-                      onChange={(e) => setExpiry(e.target.value)}
-                      className="input-bakery mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cvv">CVV</Label>
-                    <Input
-                      id="cvv"
-                      placeholder="123"
-                      value={cvv}
-                      onChange={(e) => setCvv(e.target.value)}
-                      className="input-bakery mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
+              <Label>Delivery Address</Label>
+              <Input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your address"
+                name="address"
+                autoComplete="street-address"
+              />
             </div>
           )}
 
-          {/* Order Notes */}
           <div className="card-bakery">
-            <h2 className="text-xl font-bold text-foreground">Order Notes</h2>
-            <Textarea
-              placeholder="Any special requests or dietary requirements?"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="input-bakery mt-4"
-              rows={3}
-            />
+            <h2 className="text-xl font-bold">Payment Method</h2>
+
+            <RadioGroup
+              value={paymentMethod}
+              onValueChange={v => setPaymentMethod(v as 'bca' | 'cash')}
+              className="mt-4 space-y-3"
+            >
+              <label className="flex items-center gap-4 rounded-xl border p-4">
+                <RadioGroupItem value="bca" />
+                <Landmark className="h-5 w-5" />
+                BCA Transfer (Upload Proof)
+              </label>
+
+              <label className="flex items-center gap-4 rounded-xl border p-4">
+                <RadioGroupItem value="cash" />
+                <Wallet className="h-5 w-5" />
+                Cash on Pickup/Delivery
+              </label>
+            </RadioGroup>
+
+            {paymentMethod === 'bca' && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sender Bank Name
+                  </label>
+                  <input
+                    value={senderBankName}
+                    onChange={e => setSenderBankName(e.target.value)}
+                    placeholder="ex: BCA / Mandiri / BRI"
+                    className="mt-1 w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Sender Account Name
+                  </label>
+                  <input
+                    value={senderAccountName}
+                    onChange={e => setSenderAccountName(e.target.value)}
+                    placeholder="Name on the bank account"
+                    className="mt-1 w-full rounded-xl border px-4 py-3"
+                  />
+                </div>
+              </div>
+            )}
+
+            {paymentMethod === 'bca' && (
+              <div className="mt-4 space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  Transfer to BCA: <span className="font-semibold">123-456-7890</span> (Your Bakery
+                  Name)
+                </div>
+
+                <Label>Upload Payment Proof</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setProofFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="card-bakery">
+            <h2 className="text-xl font-bold">Order Notes</h2>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} />
           </div>
         </div>
 
-        {/* Order Summary */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-2xl bg-card p-6 shadow-card">
-            <h2 className="text-xl font-bold text-foreground">Order Summary</h2>
-            
+        {/* RIGHT */}
+        <div>
+          <div className="sticky top-24 rounded-2xl bg-card p-6">
+            <h2 className="text-xl font-bold">Order Summary</h2>
+
             <div className="mt-4 space-y-3">
               {items.map(item => (
-                <div key={item.product.id} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {item.quantity}x {item.product.name}
+                <div key={item.product.id} className="flex justify-between">
+                  <span>
+                    {item.quantity}× {item.product.name}
                   </span>
-                  <span className="text-foreground">
-                    ${(item.product.price * item.quantity).toFixed(2)}
-                  </span>
+                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
 
-            <hr className="my-4 border-border" />
+            <hr className="my-4" />
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-muted-foreground">
-                <span>Subtotal</span>
-                <span>${totalPrice.toFixed(2)}</span>
+            {deliveryMethod === 'delivery' && (
+              <div className="flex justify-between text-sm">
+                <span>Delivery Fee</span>
+                <span>${DELIVERY_FEE.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold text-foreground">
-                <span>Total</span>
-                <span>${totalPrice.toFixed(2)}</span>
-              </div>
+            )}
+
+            <div className="mt-2 flex justify-between font-bold">
+              <span>Total</span>
+              <span>${finalTotal.toFixed(2)}</span>
             </div>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="mt-6 w-full rounded-full"
-              disabled={isProcessing || !isAuthenticated}
-            >
+            <Button type="submit" className="mt-6 w-full rounded-full" disabled={isProcessing}>
               {isProcessing ? (
-                'Processing...'
+                'Processing…'
               ) : (
                 <>
                   <Lock className="mr-2 h-4 w-4" />
@@ -215,15 +295,11 @@ const Checkout: React.FC = () => {
                 </>
               )}
             </Button>
-
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              By placing this order, you agree to our terms of service
-            </p>
           </div>
         </div>
       </form>
     </div>
-  );
-};
+  )
+}
 
-export default Checkout;
+export default Checkout

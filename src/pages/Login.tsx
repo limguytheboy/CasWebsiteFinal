@@ -1,121 +1,80 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Cookie, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import { useAuth } from '@/contexts/AuthContext'
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
-  const { login } = useAuth();
+  const navigate = useNavigate()
+  const { login } = useAuth()
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
 
-    const success = await login(email, password);
-    
-    if (success) {
-      toast.success('Welcome back!');
-      navigate(redirect);
-    } else {
-      toast.error('Invalid email or password');
+    try {
+      await login(email, password)
+      toast.success('Logged in successfully!')
+      navigate('/dashboard', { replace: true })
+    } catch (err: unknown) {
+      if (err instanceof Error) toast.error(err.message)
+      else toast.error('Login failed')
+    } finally {
+      setLoading(false)
     }
-    
-    setIsLoading(false);
-  };
+  }
 
   return (
-    <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 py-12 animate-fade-in">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <Cookie className="h-6 w-6 text-primary-foreground" />
-            </div>
-          </Link>
-          <h1 className="mt-4 text-2xl font-bold text-foreground">Welcome Back</h1>
-          <p className="mt-1 text-muted-foreground">Sign in to your account</p>
-        </div>
+    <form
+      onSubmit={handleLogin}
+      className="card-bakery max-w-md mx-auto mt-12 space-y-4 p-6 shadow-lg rounded-lg bg-white"
+    >
+      <h1 className="text-2xl font-bold text-center">Sign In</h1>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="card-bakery">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="input-bakery mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-1">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="input-bakery pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            size="lg"
-            className="mt-6 w-full rounded-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </Button>
-
-          {/* Demo Accounts */}
-          <div className="mt-6 rounded-xl bg-muted p-4">
-            <p className="text-sm font-medium text-foreground">Demo Accounts:</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Customer: demo@example.com / demo123<br />
-              Admin: admin@sweetbites.com / admin123<br />
-              Staff: staff@sweetbites.com / staff123
-            </p>
-          </div>
-        </form>
-
-        <p className="mt-6 text-center text-muted-foreground">
-          Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-primary hover:underline">
-            Sign Up
-          </Link>
-        </p>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
       </div>
-    </div>
-  );
-};
 
-export default Login;
+      <div>
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="********"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
+      </div>
+
+      <Button className="mt-4 w-full" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
+      </Button>
+
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        Don’t have an account?{' '}
+        <Link to="/signup" className="text-primary underline">
+          Sign up
+        </Link>
+      </p>
+    </form>
+  )
+}
+
+export default Login
