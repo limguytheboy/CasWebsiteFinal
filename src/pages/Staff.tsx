@@ -466,19 +466,26 @@ export default function Staff() {
   }, [orders])
 
   const pickupOrders = useMemo(
-    () => orders.filter(o => o.status !== 'completed' && o.deliveryMethod === 'pickup'),
-    [orders]
+    () =>
+      visibleOrders.filter(
+        o => o.status !== 'completed' && o.deliveryMethod === 'pickup'
+      ),
+    [visibleOrders]
   )
 
   const deliveryOrders = useMemo(
-    () => orders.filter(o => o.status !== 'completed' && o.deliveryMethod === 'delivery'),
-    [orders]
+    () =>
+      visibleOrders.filter(
+        o => o.status !== 'completed' && o.deliveryMethod === 'delivery'
+      ),
+    [visibleOrders]
   )
 
   const completedOrders = useMemo(
-    () => orders.filter(o => o.status === 'completed'),
-    [orders]
+    () => visibleOrders.filter(o => o.status === 'completed'),
+    [visibleOrders]
   )
+
 
   /* =====================
      Guards

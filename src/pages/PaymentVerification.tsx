@@ -103,9 +103,9 @@ export default function PaymentVerification() {
 
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<Order[]>([])
-  const [filter, setFilter] = useState<'pending' | 'verified'>('pending')
+  const [filter, setFilter] = useState<'pending' | 'verified' | 'cancelled'>('pending')
 
-    const navigate = useNavigate()
+  const navigate = useNavigate()
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
@@ -129,46 +129,52 @@ export default function PaymentVerification() {
     setLoading(true)
 
     let query = supabase
-        .from('orders')
-        .select(
-            `
-            id,
-            order_number,
-            user_id,
-            status,
-            total,
-            payment_method,
-            paid,
+      .from('orders')
+      .select(`
+        id,
+        order_number,
+        user_id,
+        status,
+        total,
+        payment_method,
+        paid,
+        bank_name,
+        sender_name,
+        payment_proof_url,
+        verified_by,
+        verified_at,
+        delivery_method,
+        delivery_address,
+        notes,
+        created_at,
 
-            bank_name,
-            sender_name,
+        profiles!orders_user_id_fkey (
+          full_name,
+          phone
+        ),
 
-            payment_proof_url,
-            verified_by,
-            verified_at,
-            delivery_method,
-            delivery_address,
-            notes,
-            created_at,
-            profiles:profiles (
-            full_name,
-            phone
-            ),
-            order_items (
-            id,
-            quantity,
-            product:products ( * )
-            )
-        `
+        order_items (
+          id,
+          quantity,
+          product:products ( * )
         )
-        .eq('payment_method', 'bca')
-        .eq('paid', false)
-        .order('created_at', { ascending: true })
+      `)
+      .eq('payment_method', 'bca')
+      .order('created_at', { ascending: true })
 
+    // ✅ FIXED FILTER
     if (filter === 'pending') {
-      query = query.eq('paid', false)
-    } else {
+      query = query
+        .eq('paid', false)
+        .neq('status', 'cancelled') // hide cancelled from pending
+    }
+
+    if (filter === 'verified') {
       query = query.eq('paid', true)
+    }
+
+    if (filter === 'cancelled') {
+      query = query.eq('status', 'cancelled')
     }
 
     const { data, error } = await query
@@ -182,9 +188,11 @@ export default function PaymentVerification() {
     }
 
     const mapped = (data as unknown as OrderRow[]).map(mapOrderRowToOrder)
+
     setOrders(mapped)
     setLoading(false)
   }, [user, profile, isStaffOrAdmin, filter])
+
 
   // realtime sync (NO ANY)
   useEffect(() => {
@@ -264,24 +272,28 @@ export default function PaymentVerification() {
 
   const rejectPayment = useCallback(
     async (orderId: string) => {
+
+      // remove instantly from UI
+      setOrders(prev => prev.filter(o => o.id !== orderId))
+
       const { error } = await supabase
         .from('orders')
         .update({
-        paid: false,
-        status: 'pending_verification',
-        verified_by: null,
-        verified_at: null,
+          paid: false,
+          status: 'cancelled',   // ✅ NEW STATUS
+          verified_by: null,
+          verified_at: null,
         })
         .eq('id', orderId)
 
       if (error) {
         console.error('[PaymentVerification] rejectPayment error:', error)
         toast.error('Reject failed')
+        await fetchOrders()
         return
       }
 
-      toast.success('Rejected (still pending verification)')
-      await fetchOrders()
+      toast.success('Payment rejected (Canceled)')
     },
     [fetchOrders]
   )
@@ -354,7 +366,16 @@ export default function PaymentVerification() {
           >
             Verified
           </button>
-
+          <button
+            className={`px-3 py-2 rounded-md border ${
+              filter === 'cancelled'
+                ? 'bg-black text-white border-black'
+                : 'bg-white'
+            }`}
+            onClick={() => setFilter('cancelled')}
+          >
+            Cancelled
+          </button>
           <button
             className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100"
             onClick={() => void fetchOrders()}
@@ -379,11 +400,45 @@ export default function PaymentVerification() {
                   <div>
                     <div className="font-semibold text-lg">
                       {order.orderNumber}{' '}
-                      {order.paid ? (
-                        <span className={badge('PAID', 'bg-green-100 text-green-700')}>PAID</span>
-                      ) : (
-                        <span className={badge('UNPAID', 'bg-red-100 text-red-700')}>UNPAID</span>
-                      )}
+                      {/* RIGHT SIDE STATUS / ACTION */}
+                      <div className="text-right text-xs text-gray-500">
+                        {order.status === 'cancelled' && (
+                          <>
+                            <div className="font-semibold text-red-600">Cancelled</div>
+                            {order.verifiedAt && (
+                              <div>{order.verifiedAt.toLocaleString()}</div>
+                            )}
+                          </>
+                        )}
+
+                        {order.status !== 'cancelled' && order.paid && (
+                          <>
+                            <div className="font-semibold text-green-700">Verified</div>
+                            {order.verifiedAt && (
+                              <div>{order.verifiedAt.toLocaleString()}</div>
+                            )}
+                          </>
+                        )}
+
+                        {order.status !== 'cancelled' && !order.paid && (
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => void verifyPayment(order.id)}
+                              className="px-3 py-2 rounded-md bg-green-600 text-white hover:opacity-90 text-sm font-semibold"
+                            >
+                              Verify
+                            </button>
+
+                            <button
+                              onClick={() => void rejectPayment(order.id)}
+                              className="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm font-semibold"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
 
                     {/* ✅ Bank + Sender */}
@@ -418,28 +473,6 @@ export default function PaymentVerification() {
                       <div className="text-sm text-gray-500 mt-2">Notes: {order.notes}</div>
                     ) : null}
                   </div>
-
-                  {!order.paid ? (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => void verifyPayment(order.id)}
-                        className="px-3 py-2 rounded-md bg-green-600 text-white hover:opacity-90 text-sm font-semibold"
-                      >
-                        Verify
-                      </button>
-                      <button
-                        onClick={() => void rejectPayment(order.id)}
-                        className="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-100 text-sm font-semibold"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-gray-500 text-right">
-                      <div className="font-semibold text-green-700">Verified</div>
-                      {order.verifiedAt ? <div>{order.verifiedAt.toLocaleString()}</div> : null}
-                    </div>
-                  )}
                 </div>
 
                 <div className="border rounded-xl p-3">

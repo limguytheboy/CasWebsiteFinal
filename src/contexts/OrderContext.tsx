@@ -17,7 +17,12 @@ type OrdersRow = {
   notes: string | null
   payment_method: PaymentMethod | null
   delivery_method: DeliveryMethod | null
+  delivery_address: string | null
+  payment_proof_url: string | null
+  bank_name: string | null
+  sender_name: string | null
   created_at: string | null
+  paid: boolean | null
 }
 
 interface OrdersContextType {
@@ -40,15 +45,17 @@ interface OrdersContextType {
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
-export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+
   const { user } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
+  // ✅ MAP DB -> FRONTEND
   const mapOrderRowToOrder = (row: OrdersRow): Order => {
-    const paymentMethod = (row.payment_method ?? 'cash') as Order['paymentMethod']
+
+    const paymentMethod =
+      (row.payment_method ?? 'cash') as Order['paymentMethod']
 
     return {
       id: row.id,
@@ -58,19 +65,21 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
       total: Number(row.total ?? 0),
       notes: row.notes ?? '',
       paymentMethod,
-      deliveryMethod: (row.delivery_method ?? 'pickup') as Order['deliveryMethod'],
-      createdAt: row.created_at ? new Date(row.created_at) : new Date(),
+      deliveryMethod:
+        (row.delivery_method ?? 'pickup') as Order['deliveryMethod'],
+      createdAt: row.created_at
+        ? new Date(row.created_at)
+        : new Date(),
 
-      // ✅ REQUIRED by your Order type
       items: [],
 
-      // ✅ REQUIRED by your Order type
-      // rule: card/bca = paid, cash = unpaid
-      paid: paymentMethod === 'bca',
+      // ✅ REAL VALUE FROM DATABASE
+      paid: row.paid ?? false,
     }
   }
 
   const fetchOrders = async () => {
+
     if (!user) {
       setOrders([])
       setLoading(false)
@@ -81,8 +90,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const { data, error } = await supabase
       .from('orders')
-      .select(
-        `
+      .select(`
         id,
         user_id,
         order_number,
@@ -91,9 +99,13 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
         notes,
         payment_method,
         delivery_method,
-        created_at
-      `
-      )
+        delivery_address,
+        payment_proof_url,
+        bank_name,
+        sender_name,
+        created_at,
+        paid
+      `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .returns<OrdersRow[]>()
@@ -125,8 +137,10 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
     senderBankName = null,
     senderAccountName = null
   ) => {
+
     if (!user) throw new Error('Not authenticated')
 
+    // ✅ INSERT ORDER (NOW SAVES EVERYTHING)
     const { data: orderRow, error: orderError } = await supabase
       .from('orders')
       .insert([
@@ -134,19 +148,20 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
           user_id: user.id,
           total,
           status: 'pending',
+
           payment_method: paymentMethod,
           delivery_method: deliveryMethod,
-          notes,
+          delivery_address: address,
 
-          // only works if columns exist in DB
-          address,
           payment_proof_url: paymentProofUrl,
-          sender_bank_name: senderBankName,
-          sender_account_name: senderAccountName,
-        },
+          bank_name: senderBankName,
+          sender_name: senderAccountName,
+
+          notes,
+          paid: false // ✅ NEVER AUTO PAID
+        }
       ])
-      .select(
-        `
+      .select(`
         id,
         user_id,
         order_number,
@@ -155,9 +170,13 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
         notes,
         payment_method,
         delivery_method,
-        created_at
-      `
-      )
+        delivery_address,
+        payment_proof_url,
+        bank_name,
+        sender_name,
+        created_at,
+        paid
+      `)
       .single<OrdersRow>()
 
     if (orderError) throw orderError
@@ -165,7 +184,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const order = mapOrderRowToOrder(orderRow)
 
-    // create order items (based on your table columns)
+    // ✅ INSERT ORDER ITEMS
     const orderItemsPayload = items.map(ci => ({
       order_id: order.id,
       product_id: ci.product.id,
@@ -181,6 +200,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({
     if (itemsError) throw itemsError
 
     await fetchOrders()
+
     return order
   }
 
