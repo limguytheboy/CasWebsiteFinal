@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Target, Users, BookOpen, Camera, Lightbulb, Award, Sparkles } from 'lucide-react';
+import { Heart, Target, Users, BookOpen, Camera, Lightbulb, Award, Sparkles, Hammer } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const CAS: React.FC = () => {
@@ -45,7 +45,7 @@ const CAS: React.FC = () => {
             </div>
             <div className="space-y-4 text-muted-foreground">
               <p>
-                Sweet Bites is a student-run bakery created as part of my IB CAS (Creativity, Activity, Service) 
+                Beyond Lumina is a student-run bakery created as part of my IB CAS (Creativity, Activity, Service) 
                 experience. The project was started to bring our school community together through the joy of 
                 freshly baked goods.
               </p>
@@ -278,7 +278,7 @@ const CAS: React.FC = () => {
                 service projects.
               </p>
               <p>
-                <strong>Why it matters:</strong> Beyond the treats, Sweet Bites brought people together. 
+                <strong>Why it matters:</strong> Beyond the treats, Beyond Lumina brought people together. 
                 It showed that students can make a real difference in their community through initiative, 
                 hard work, and a genuine desire to help others.
               </p>
@@ -331,7 +331,7 @@ const CAS: React.FC = () => {
               Conclusion
             </h2>
             <p className="mx-auto mt-6 max-w-2xl text-primary-foreground/90">
-              Through Sweet Bites, I discovered that service is not just about doing something for others—it's 
+              Through Beyond Lumina, I discovered that service is not just about doing something for others—it's 
               about growing alongside them. This project taught me responsibility, patience, and the joy of 
               creating something meaningful.
             </p>
@@ -353,4 +353,27 @@ const CAS: React.FC = () => {
   );
 };
 
-export default CAS;
+const ComingSoon: React.FC = () => {
+  return (
+    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6 animate-fade-in">
+
+      {/* Icon */}
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <Hammer className="h-8 w-8" />
+      </div>
+
+      {/* Title */}
+      <h1 className="text-3xl font-bold">
+        Page Under Construction
+      </h1>
+
+      {/* Subtitle */}
+      <p className="mt-4 max-w-md text-muted-foreground">
+        We're currently building this section. Please check back soon.
+      </p>
+
+    </div>
+  )
+}
+//export default CAS;
+export default ComingSoon;

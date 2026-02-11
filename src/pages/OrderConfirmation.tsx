@@ -72,7 +72,7 @@ const OrderConfirmation: React.FC = () => {
                   {item.quantity}x {item.product.name}
                 </span>
                 <span className="font-medium text-foreground">
-                  ${(item.product.price * item.quantity).toFixed(2)}
+                  p {(item.product.price * item.quantity)}
                 </span>
               </div>
             ))}
@@ -82,7 +82,7 @@ const OrderConfirmation: React.FC = () => {
 
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span className="text-primary">${order.total.toFixed(2)}</span>
+              <span className="text-primary">Rp {order.total}</span>
             </div>
           </div>
         </div>

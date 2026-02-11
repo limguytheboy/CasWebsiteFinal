@@ -47,7 +47,7 @@ const Products: React.FC = () => {
             Our Treats
           </h1>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-            Explore our handcrafted selection of freshly baked desserts and pastries
+            Explore our handcrafted selection of freshly baked desserts!
           </p>
         </div>
       </section>

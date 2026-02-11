@@ -29,9 +29,11 @@ type OrderRow = {
   created_at: string | null
 
   // optional transfer fields
-  sender_bank_name: string | null
-  sender_account_name: string | null
+  bank_name: string | null
+  sender_name: string | null
   payment_proof_url: string | null
+
+  paid: boolean | null
 }
 
 type OrderDetailItem = {
@@ -57,6 +59,7 @@ type FullOrderDetail = {
   paymentProofUrl?: string | null
 
   items: OrderDetailItem[]
+  paid?: boolean | null
 }
 
 const statusConfig: Record<
@@ -114,8 +117,7 @@ const OrderDetail: React.FC = () => {
       // 1) Load order
       const { data: orderRow, error: orderErr } = await supabase
         .from('orders')
-        .select(
-          `
+        .select(`
           id,
           order_number,
           status,
@@ -125,11 +127,10 @@ const OrderDetail: React.FC = () => {
           delivery_method,
           delivery_address,
           created_at,
-          sender_bank_name,
-          sender_account_name,
+          bank_name,
+          sender_name,
           payment_proof_url
-        `
-        )
+        `)
         .eq('id', id)
         .single<OrderRow>()
 
@@ -210,11 +211,12 @@ const OrderDetail: React.FC = () => {
         deliveryAddress: orderRow.delivery_address ?? undefined,
         createdAt,
 
-        senderBankName: orderRow.sender_bank_name,
-        senderAccountName: orderRow.sender_account_name,
+        senderBankName: orderRow.bank_name,
+        senderAccountName: orderRow.sender_name,
         paymentProofUrl: orderRow.payment_proof_url,
 
         items: detailItems,
+        paid: orderRow.paid,
       }
 
       setOrder(full)
@@ -251,11 +253,11 @@ const OrderDetail: React.FC = () => {
   }
 
   const paymentStatus = useMemo(() => {
-    // bca transfer => paid
-    // cash => unpaid
-    if (!order?.paymentMethod) return '-'
-    return order.paymentMethod === 'bca' ? 'Paid' : 'Unpaid'
-  }, [order?.paymentMethod])
+    if (order?.paid === true) return 'Paid'
+    if (order?.paid === false) return 'Unpaid'
+    return '-'
+  }, [order?.paid])
+
 
   if (loading) {
     return (
@@ -384,7 +386,7 @@ const OrderDetail: React.FC = () => {
                       </div>
 
                       <p className="font-medium text-foreground">
-                        ${(Number(item.product.price ?? 0) * item.quantity).toFixed(2)}
+                        Rp {(Number(item.product.price ?? 0) * item.quantity)}
                       </p>
                     </div>
                   ))}
@@ -432,7 +434,7 @@ const OrderDetail: React.FC = () => {
 
               <div className="flex justify-between text-lg font-bold text-foreground">
                 <span>Total</span>
-                <span className="text-primary">${order.total.toFixed(2)}</span>
+                <span className="text-primary">Rp {order.total}</span>
               </div>
             </div>
 

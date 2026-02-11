@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
                 <Cookie className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">Sweet Bites</span>
+              <span className="text-xl font-bold text-foreground">Beyond Lumina</span>
             </Link>
             <p className="mt-4 max-w-sm text-muted-foreground">
               Handcrafted with love by students for our school community. Every order supports our CAS journey.
@@ -61,7 +61,7 @@ const Footer: React.FC = () => {
             <h4 className="mb-4 font-bold text-foreground">Find Us</h4>
             <div className="flex items-start gap-2 text-muted-foreground">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>School Campus<br />Building A, Room 101</span>
+              <span>SPH Lippo Cikarang</span>
             </div>
             <p className="mt-4 text-sm text-muted-foreground">
               Pickup available during lunch breaks
@@ -70,7 +70,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
-          <p>© 2024 Sweet Bites CAS Project. Baked with ❤️</p>
+          <p>© 2026 Beyond Lumina CAS Project. Baked with ❤️</p>
         </div>
       </div>
     </footer>

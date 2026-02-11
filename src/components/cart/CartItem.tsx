@@ -53,7 +53,7 @@ const CartItem: React.FC<CartItemProps> = ({ item }) => {
           {/* Price & Remove */}
           <div className="flex items-center gap-4">
             <span className="font-bold text-primary">
-              ${(product.price * quantity).toFixed(2)}
+              Rp {(product.price * quantity)}
             </span>
             <Button
               variant="ghost"

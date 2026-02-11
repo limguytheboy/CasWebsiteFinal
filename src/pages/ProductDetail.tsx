@@ -95,7 +95,7 @@ const ProductDetail: React.FC = () => {
             <p className="mt-4 text-muted-foreground">{product.description}</p>
 
             <div className="mt-6 text-3xl font-bold text-primary">
-              ${Number(product.price).toFixed(2)}
+              Rp {Number(product.price)}
             </div>
 
             {/* ✅ SAFE ALLERGENS */}
@@ -129,7 +129,7 @@ const ProductDetail: React.FC = () => {
 
               <Button onClick={handleAddToCart}>
                 <ShoppingBag className="mr-2 h-5 w-5" />
-                Add — ${(Number(product.price) * quantity).toFixed(2)}
+                Add — Rp {(Number(product.price) * quantity)}
               </Button>
             </div>
           </div>

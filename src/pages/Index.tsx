@@ -36,7 +36,7 @@ const Index: React.FC = () => {
                 Handcrafted with Love
               </span>
               <h1 className="text-4xl font-extrabold md:text-5xl lg:text-6xl">
-                Sweet Bites, <span className="text-gradient-warm">Happy Hearts</span>
+                Beyond Lumina, <span className="text-gradient-warm">Happy Hearts</span>
               </h1>
               <p className="mt-6 text-lg text-muted-foreground">
                 Artisanal desserts baked fresh by students for our school community.

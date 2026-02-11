@@ -81,7 +81,7 @@ const OrderHistory: React.FC = () => {
 
                   <div className="flex items-center gap-3">
                     <span className="text-xl font-bold text-primary">
-                      ${order.total.toFixed(2)}
+                      Rp {order.total}
                     </span>
                     <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
                   </div>

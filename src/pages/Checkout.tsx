@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { useDebounce } from "use-debounce"
 
-const DELIVERY_FEE = 1
+const DELIVERY_FEE = 10000
 
 // ✅ ALLOWED DATABASE VALUES
 const ALLOWED_BANKS = ['bca','mandiri','bni','bri','other']
@@ -36,10 +36,17 @@ const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false)
 
   const [proofFile, setProofFile] = useState<File | null>(null)
+  const [fullName, setFullName] = useState(profile?.full_name ?? '')
+  const [phone, setPhone] = useState(profile?.phone ?? '')
 
   useEffect(() => {
-    if (profile?.address) setAddress(profile.address)
-  }, [profile?.address])
+    if (!profile) return
+
+    setAddress(profile.address ?? '')
+    setFullName(profile.full_name ?? '')
+    setPhone(profile.phone ?? '')
+  }, [profile])
+
 
   const finalTotal = useMemo(() => {
     return deliveryMethod === 'delivery'
@@ -91,12 +98,6 @@ const Checkout: React.FC = () => {
       return
     }
 
-    if (!profile?.full_name || !profile?.phone) {
-      toast.error('Please complete your profile before ordering')
-      navigate('/dashboard/profile')
-      return
-    }
-
     if (deliveryMethod === 'delivery' && !address.trim()) {
       toast.error('Delivery address is required')
       return
@@ -139,7 +140,21 @@ const Checkout: React.FC = () => {
               ? bankName.trim().toLowerCase()
               : 'other')
           : null
+      
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          phone: phone,
+        })
+        .eq('id', user.id)
+        .select()
+        .single()
 
+      if (updatedProfile) {
+        setFullName(updatedProfile.full_name ?? '')
+        setPhone(updatedProfile.phone ?? '')
+      }
 
       const order = await createOrder(
         items,
@@ -185,8 +200,31 @@ const Checkout: React.FC = () => {
       <form onSubmit={handleSubmit} className="mt-8 grid gap-8 lg:grid-cols-3">
 
         {/* LEFT SIDE — unchanged UI */}
-        <div className="space-y-6 lg:col-span-2">
 
+        <div className="space-y-6 lg:col-span-2">
+          <div className="card-bakery">
+            <h2 className="text-xl font-bold">Contact Information</h2>
+
+            <div className="mt-4 space-y-3">
+
+              <div>
+                <Label>Full Name</Label>
+                <Input
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label>Phone Number</Label>
+                <Input
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                />
+              </div>
+
+            </div>
+          </div>
           <div className="card-bakery">
             <h2 className="text-xl font-bold">Delivery Method</h2>
 
@@ -204,7 +242,7 @@ const Checkout: React.FC = () => {
               <label className="flex items-center gap-4 rounded-xl border p-4">
                 <RadioGroupItem value="delivery" />
                 <Truck className="h-5 w-5" />
-                Delivery (+${DELIVERY_FEE})
+                Delivery (+Rp {DELIVERY_FEE})
               </label>
             </RadioGroup>
           </div>
@@ -223,6 +261,7 @@ const Checkout: React.FC = () => {
 
             <h2 className="text-xl font-bold">Payment Method</h2>
 
+            <label className="text-xl font-weight 500">BCA: 5222169569, Shannone Glynn</label>
             <RadioGroup
               value={paymentMethod}
               onValueChange={(v: 'bca' | 'cash') => setPaymentMethod(v)}
@@ -284,12 +323,6 @@ const Checkout: React.FC = () => {
             )}
 
           </div>
-
-          <div className="card-bakery">
-            <h2 className="text-xl font-bold">Order Notes</h2>
-            <Textarea value={notes} onChange={e => setNotes(e.target.value)} />
-          </div>
-
         </div>
 
         {/* RIGHT SIDE */}
@@ -302,7 +335,7 @@ const Checkout: React.FC = () => {
             {items.map(item => (
               <div key={item.product.id} className="flex justify-between">
                 <span>{item.quantity}× {item.product.name}</span>
-                <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                <span>Rp {(item.product.price * item.quantity)}</span>
               </div>
             ))}
 
@@ -310,7 +343,7 @@ const Checkout: React.FC = () => {
 
             <div className="flex justify-between font-bold">
               <span>Total</span>
-              <span>${finalTotal.toFixed(2)}</span>
+              <span>Rp {finalTotal}</span>
             </div>
 
             <Button type="submit" className="mt-6 w-full rounded-full" disabled={isProcessing}>

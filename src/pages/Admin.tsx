@@ -44,7 +44,7 @@ const Admin: React.FC = () => {
         <div className="card-bakery flex gap-2"><ShoppingBag /> {orders.length}</div>
         <div className="card-bakery flex gap-2"><Clock /> {pendingOrders.length}</div>
         <div className="card-bakery flex gap-2"><CheckCircle /> {completedOrders.length}</div>
-        <div className="card-bakery flex gap-2"><DollarSign /> ${totalRevenue.toFixed(2)}</div>
+        <div className="card-bakery flex gap-2"><DollarSign /> RP {totalRevenue}</div>
       </div>
 
       {/* Orders Table */}
@@ -63,7 +63,7 @@ const Admin: React.FC = () => {
               <tr key={order.id}>
                 <td>{order.id}</td>
                 <td>{format(order.createdAt, 'MMM d, yyyy')}</td>
-                <td>${order.total.toFixed(2)}</td>
+                <td>Rp {order.total}</td>
                 <td>
                   <select
                     value={order.status}

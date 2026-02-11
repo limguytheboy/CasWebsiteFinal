@@ -31,6 +31,15 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
+  const handleGoogleLogin = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+  };
+
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Our Treats' },
@@ -47,7 +56,7 @@ const Navbar: React.FC = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary">
             <Cookie className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold">Sweet Bites</span>
+          <span className="text-xl font-bold">Beyond Lumina</span>
         </Link>
 
         {/* Desktop Nav */}
@@ -80,18 +89,18 @@ const Navbar: React.FC = () => {
             </Button>
           </Link>
 
-          {isAuthenticated ? (
-            <Link to="/dashboard">
-              <Button variant="outline" className="rounded-full gap-2">
-                <UserIcon className="h-4 w-4" />
-                {user.email}
-              </Button>
-            </Link>
-          ) : (
-            <Link to="/login">
-              <Button className="rounded-full">Sign In</Button>
-            </Link>
-          )}
+        {isAuthenticated ? (
+          <Link to="/dashboard">
+            <Button variant="outline" className="rounded-full gap-2">
+              <UserIcon className="h-4 w-4" />
+              {user.email}
+            </Button>
+          </Link>
+        ) : (
+          <Button className="rounded-full" onClick={handleGoogleLogin}>
+            Sign In
+          </Button>
+        )}
         </div>
 
         {/* Mobile */}

@@ -41,13 +41,19 @@ interface OrdersContextType {
     senderBankName?: string | null,
     senderAccountName?: string | null
   ) => Promise<Order>
+
+  updateOrderStatus: (
+    orderId: string,
+    status: Order['status']
+  ) => Promise<void>
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined)
 
 export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -70,14 +76,12 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       createdAt: row.created_at
         ? new Date(row.created_at)
         : new Date(),
-
       items: [],
-
-      // ✅ REAL VALUE FROM DATABASE
       paid: row.paid ?? false,
     }
   }
 
+  // ✅ FETCH ORDERS
   const fetchOrders = async () => {
 
     if (!user) {
@@ -88,7 +92,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     setLoading(true)
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('orders')
       .select(`
         id,
@@ -106,9 +110,14 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         created_at,
         paid
       `)
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .returns<OrdersRow[]>()
+
+    // ✅ Admin sees ALL orders
+    if (profile?.role !== 'admin') {
+      query = query.eq('user_id', user.id)
+    }
+
+    const { data, error } = await query.returns<OrdersRow[]>()
 
     if (error) {
       console.error(error)
@@ -124,8 +133,9 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     fetchOrders()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, profile?.role])
 
+  // ✅ CREATE ORDER
   const createOrder: OrdersContextType['createOrder'] = async (
     items,
     total,
@@ -140,7 +150,6 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (!user) throw new Error('Not authenticated')
 
-    // ✅ INSERT ORDER (NOW SAVES EVERYTHING)
     const { data: orderRow, error: orderError } = await supabase
       .from('orders')
       .insert([
@@ -148,17 +157,14 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           user_id: user.id,
           total,
           status: 'pending',
-
           payment_method: paymentMethod,
           delivery_method: deliveryMethod,
           delivery_address: address,
-
           payment_proof_url: paymentProofUrl,
           bank_name: senderBankName,
           sender_name: senderAccountName,
-
           notes,
-          paid: false // ✅ NEVER AUTO PAID
+          paid: false
         }
       ])
       .select(`
@@ -184,7 +190,6 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const order = mapOrderRowToOrder(orderRow)
 
-    // ✅ INSERT ORDER ITEMS
     const orderItemsPayload = items.map(ci => ({
       order_id: order.id,
       product_id: ci.product.id,
@@ -204,8 +209,44 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return order
   }
 
+  // ✅ UPDATE STATUS (ADMIN)
+  const updateOrderStatus = async (
+    orderId: string,
+    status: Order['status']
+  ) => {
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+
+    if (error) {
+      console.error(error)
+      toast.error('Failed to update order status')
+      return
+    }
+
+    setOrders(prev =>
+      prev.map(order =>
+        order.id === orderId
+          ? { ...order, status }
+          : order
+      )
+    )
+
+    toast.success('Order status updated')
+  }
+
   return (
-    <OrdersContext.Provider value={{ orders, loading, fetchOrders, createOrder }}>
+    <OrdersContext.Provider
+      value={{
+        orders,
+        loading,
+        fetchOrders,
+        createOrder,
+        updateOrderStatus
+      }}
+    >
       {children}
     </OrdersContext.Provider>
   )

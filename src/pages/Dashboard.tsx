@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
 
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold text-primary">
-                          ${Number(order.total ?? 0).toFixed(2)}
+                          Rp {Number(order.total ?? 0)}
                         </span>
                         <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                       </div>

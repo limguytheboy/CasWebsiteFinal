@@ -19,8 +19,6 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderDetail from "./pages/OrderDetail";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import OrderHistory from "./pages/OrderHistory";
 import Profile from "./pages/Profile";
@@ -28,6 +26,7 @@ import CAS from "./pages/CAS";
 import Admin from "./pages/Admin";
 import Staff from "./pages/Staff";
 import NotFound from "./pages/NotFound";
+import SimpleLogin from "./pages/SimpleLogin";
 import PaymentVerification from "./pages/PaymentVerification";
 
 const queryClient = new QueryClient();
@@ -50,8 +49,7 @@ const App = () => (
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
                   <Route path="/order/:orderId" element={<OrderDetail />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/login" element={<SimpleLogin />} />
                   <Route path="/cas" element={<CAS />} />
 
                   {/* AUTH CHECKS HAPPEN INSIDE PAGES */}
