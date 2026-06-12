@@ -10,7 +10,6 @@ This project transitions messy, error-prone manual ledger calculations into a ce
 
 ### 1. Centralized Data & Inventory State Management
 * **Dynamic Inventory Tracking:** Replaced traditional spreadsheets with a structured data model to handle product stock, unit costs, and real-time sales transactions.
-* **Automated Revenue Accounting:** Programmed real-time calculation logic to instantly compute profit margins, operational costs, and Return on Investment (ROI), eliminating human accounting errors during peak bazaar hours.
 
 ### 2. Full-Stack Infrastructure & Deployment
 * **Backend & Database (Supabase):** Integrated Supabase as a relational cloud backend to handle secure data storage, structural state management, and seamless inventory updates.
