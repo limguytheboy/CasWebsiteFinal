@@ -1,32 +1,36 @@
-# 🌐 CAS School Bazaar Logistics & Transaction Platform
+# 🌐 CAS School Bazaar Order & Logistics Management Platform
 
-A responsive, production-ready full-stack web platform engineered to streamline inventory management, financial tracking, and revenue calculation for the high school CAS fundraising bazaar. 
+A responsive, production-ready full-stack e-commerce and back-office management platform engineered to streamline order placements, payment verifications, and inventory logistics for the high school CAS fundraising bazaar (e.g., cookie sales).
 
-This project transitions messy, error-prone manual ledger calculations into a centralized, data-driven system to maximize fundraising efficiency.
+This project transitions chaotic messaging-based manual ordering into a centralized, role-based web application to automate order pipelines and track real-time sales revenue.
 
 ---
 
 ## 🛠️ Architecture & Core Features
 
-### 1. Centralized Data & Inventory State Management
-* **Dynamic Inventory Tracking:** Replaced traditional spreadsheets with a structured data model to handle product stock, unit costs, and real-time sales transactions.
+### 1. 4-Tier Role Hierarchy & Authentication System
+Designed and implemented a structured user authorization pipeline split into four distinct access levels:
+* **Customer:** Browses the menu, manages a dynamic **Shopping Cart (장바구니)**, and places orders.
+* **Staff:** Monitors the active kitchen/preparation queue and updates live fulfillment tracking.
+* **Admin:** Oversees entire event operations, adjusts global system configurations, and tracks raw data.
+* **Hierarchy Enforcement:** Secured route access based on user metadata fetched dynamically via the Supabase auth instance.
 
-### 2. Full-Stack Infrastructure & Deployment
-* **Backend & Database (Supabase):** Integrated Supabase as a relational cloud backend to handle secure data storage, structural state management, and seamless inventory updates.
-* **Frontend Architecture (TypeScript & Tailwind CSS):** Developed a highly responsive, intuitive user interface utilizing TypeScript for robust type-safety and Tailwind CSS for utility-first, clean UI styling.
-* **Cloud Hosting (Vercel):** Deployed the live prototype on Vercel, establishing a continuous integration pipeline for rapid iteration and deployment testing.
+### 2. End-to-End Order & Payment Pipeline
+* **Dynamic Shopping Cart:** Built a client-side state management system allowing customers to seamlessly add, modify, and calculate item quantities before checkout.
+* **Payment Proof Verification:** Implemented a secure file-upload pipeline where customers input delivery addresses and upload transaction receipt proofs (Payment Proof) to verify non-cash transfers.
+* **Order State Machine:** Programmed a backend state tracker (`OrderState`) to transition orders seamlessly from *Pending Verification* ➔ *In Preparation* ➔ *Out for Delivery* ➔ *Completed*.
 
-### 3. AI-Assisted "Vibe Coding" Development Lifecycle
-* Accelerated the traditional development lifecycle by effectively collaborating with advanced LLM coding assistants (Lovable/AI workflows).
-* Transformed abstract wireframes and system requirements into production-ready frontend components and database schemas through precise prompt engineering and iterative logic debugging.
+### 3. Inventory Control (CRUD) & Sales Dashboard
+* **Dynamic Content Management (CRUD):** Built an administrative interface allowing real-time inventory adjustments, empowering admins to instantly create, read, update, and delete menu items as stock fluctuates.
+* **Revenue Analytics Dashboard:** Constructed an executive data viewport that aggregates processed orders to display overall gross sales revenue and total unit velocity, replacing manual paper-ledger tracking.
 
 ---
 
 ## 💻 Tech Stack Detail
-* **Frontend:** TypeScript, JavaScript, Tailwind CSS
-* **Backend/Database:** Supabase (PostgreSQL-based cloud infrastructure)
-* **Hosting & Deployment:** Vercel
-* **Development Paradigm:** AI-assisted rapid prototyping (Vibe Coding)
+* **Frontend:** TypeScript, JavaScript, Tailwind CSS (Responsive UI Layouts)
+* **Backend/Database:** Supabase (PostgreSQL relational database & storage buckets for payment proofs)
+* **Hosting & Deployment:** Vercel (Continuous Integration/Continuous Deployment)
+* **Development Paradigm:** AI-assisted rapid prototyping (Lovable/AI Vibe Coding workflows)
 
 ---
 *For a high-level overview of my complete development portfolio, quantitative analytics, and other core systems, please visit my main profile: [github.com/limguytheboy](https://github.com/limguytheboy)*
